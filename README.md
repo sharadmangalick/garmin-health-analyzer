@@ -1,207 +1,280 @@
-# Garmin Health Analyzer
+# 🏃‍♂️ Garmin Health Analyzer
 
-Analyze your Garmin Connect data to uncover health and training insights. This tool fetches your data from Garmin Connect, analyzes patterns, and generates a comprehensive PDF report with personalized recommendations.
+> **Uncover hidden patterns in your Garmin data and get personalized health insights**
 
-## What It Does
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
-- **Fetches your data** from Garmin Connect (sleep, heart rate, daily summaries, activities)
-- **Analyzes patterns** in your health metrics over time
-- **Identifies correlations** (e.g., sedentary time → sleep quality)
-- **Generates recommendations** based on your personal data
-- **Creates a PDF report** with findings, trends, and scientific context
+Turn your Garmin Connect data into actionable health insights. This tool analyzes your sleep, heart rate, stress, and activity patterns to help you train smarter and recover better.
 
-### Insights You'll Get
+---
 
-- **Recovery Status**: Resting heart rate and Body Battery trends
-- **Sleep Patterns**: Duration, quality, and what affects them
-- **Lifestyle Factors**: How sedentary time impacts your health
-- **Stress Impact**: How stress levels affect overnight recovery
-- **Day-of-Week Patterns**: Your best and worst days for various metrics
-- **Monthly Trends**: How your metrics have changed over time
+## ✨ What You'll Discover
 
-## Installation
-
-### Prerequisites
-
-- Python 3.8 or higher
-- A Garmin Connect account with data
-
-### Setup
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/garmin-health-analyzer.git
-   cd garmin-health-analyzer
-   ```
-
-2. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Run the quickstart guide**
-   ```bash
-   python main.py quickstart
-   ```
-
-## Usage
-
-### Step 1: Fetch Your Data
-
-Fetch your data from Garmin Connect. You'll be prompted for your Garmin credentials:
-
-```bash
-# Fetch last 30 days
-python main.py fetch --days 30
-
-# Fetch last 6 months for comprehensive analysis
-python main.py fetch --days 180
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    YOUR HEALTH INSIGHTS                         │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  📉 Recovery Trends      │  😴 Sleep Patterns                  │
+│  ─────────────────       │  ────────────────                   │
+│  RHR: 45 → 49 bpm        │  Avg: 6.2 hrs                       │
+│  Body Battery: 85 → 72   │  Best day: Sunday                   │
+│  Status: Accumulated     │  Worst: Friday                      │
+│          fatigue         │  (social nights!)                   │
+│                          │                                     │
+│  🪑 Sedentary Impact     │  😰 Stress & Recovery               │
+│  ──────────────────      │  ─────────────────                  │
+│  >17h sitting = 5h sleep │  Low stress: +80 BB                 │
+│  <14h sitting = 7h sleep │  High stress: +46 BB                │
+│  Key lever identified!   │  Stress > sleep duration            │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-Your credentials are used to authenticate with Garmin Connect. The session is cached locally so you don't need to log in every time.
+---
 
-### Step 2: Analyze Your Data
-
-Run the analysis to generate insights:
+## 🚀 Quick Start
 
 ```bash
-# Generate PDF report (default)
+# 1. Clone and install
+git clone https://github.com/sharadmangalick/garmin-health-analyzer.git
+cd garmin-health-analyzer
+pip install -r requirements.txt
+
+# 2. Fetch your data (you'll be prompted for Garmin credentials)
+python main.py fetch --days 90
+
+# 3. Generate your personalized report
 python main.py analyze
-
-# Show text summary in terminal
-python main.py analyze --text
-
-# Both text and PDF
-python main.py analyze --text
-
-# Custom output filename
-python main.py analyze --output my_health_report.pdf
 ```
 
-### Step 3: Review Your Report
+That's it! Open `Health_Insights_Report.pdf` to see your insights.
 
-Open the generated `Health_Insights_Report.pdf` to see:
+---
 
-1. **Executive Summary** - Key findings at a glance
-2. **Key Metrics** - Your current vs baseline values
-3. **Patterns & Correlations** - What affects what
-4. **Recommendations** - Personalized suggestions
-5. **Monthly Trends** - How you've changed over time
-6. **The Science** - Research backing the insights
+## 📊 Sample Output
 
-## All Commands
+### Terminal Summary
+
+```
+$ python main.py analyze --text
+
+╭─────────────────────────── Analysis ───────────────────────────╮
+│ Analyzing your Garmin data...                                  │
+╰────────────────────────────────────────────────────────────────╯
+  Loaded 90 days of daily summaries
+  Loaded 90 sleep records
+  Date range: 2025-10-18 to 2026-01-15
+
+=== GARMIN DATA ANALYSIS SUMMARY ===
+Data range: 2025-10-18 to 2026-01-15
+Days analyzed: 90
+
+Resting HR: 48.9 bpm (baseline: 44.7, +4.1 change)
+Body Battery: 80 wake avg (baseline: 87)
+Sleep: 6.0 hrs avg (46% nights under 6h)
+Stress: 37 avg (26% days above 45)
+
+=== TOP RECOMMENDATIONS ===
+[HIGH] Recovery: Consider a recovery week with reduced training
+[HIGH] Sleep: Aim for 7-8 hours consistently
+[MEDIUM] Movement: Add movement breaks every 90 minutes
+```
+
+### PDF Report Preview
+
+The generated PDF includes:
+
+| Page | Contents |
+|------|----------|
+| **1. Title & Summary** | Executive summary with key findings |
+| **2. Key Metrics** | RHR, Body Battery, Sleep, Stress trends |
+| **3. Patterns** | Sedentary correlations, day-of-week analysis |
+| **4. Recommendations** | Prioritized, personalized action items |
+| **5. Monthly Trends** | How your metrics changed over time |
+| **6. Science** | Research backing the insights |
+
+<details>
+<summary>📄 Click to see sample report sections</summary>
+
+#### Executive Summary
+```
+This analysis reveals three key findings:
+
+1. ACCUMULATED FATIGUE: Your resting HR rose from 45 to 49 bpm,
+   and Body Battery dropped from 87 to 72. Your body needs recovery.
+
+2. SEDENTARY TIME PREDICTS SLEEP: Days with 17+ hours sedentary
+   average only 5h sleep. This is your biggest lifestyle lever.
+
+3. STRESS THROTTLES RECOVERY: Low-stress nights show +80 Body
+   Battery recharge vs +46 on high-stress nights.
+```
+
+#### Sedentary vs Sleep Correlation Table
+```
+┌──────────────────┬─────────────┬─────────────────┐
+│ Sedentary Hours  │ Avg Sleep   │ Impact          │
+├──────────────────┼─────────────┼─────────────────┤
+│ < 14 hours       │ 7.2 hours   │ ✓ Best sleep    │
+│ 14-17 hours      │ 6.4 hours   │ ~ Moderate      │
+│ 17+ hours        │ 5.0 hours   │ ✗ Poor sleep    │
+└──────────────────┴─────────────┴─────────────────┘
+```
+
+#### Day-of-Week Patterns
+```
+        Mon   Tue   Wed   Thu   Fri   Sat   Sun
+Sleep   6.2h  6.4h  6.3h  5.8h  6.1h  5.4h  7.2h  ← Sunday best!
+BB      72    74    71    68    70    64    78    ← Saturday worst
+Stress  36    38    37    40    35    32    30    ← Weekend relief
+```
+
+</details>
+
+---
+
+## 📈 Metrics Analyzed
+
+| Metric | What It Tells You | Why It Matters |
+|--------|-------------------|----------------|
+| **Resting Heart Rate** | Recovery status | Rising RHR = accumulated fatigue |
+| **Body Battery** | Energy reserves | Low wake values = recovery deficit |
+| **Sleep Duration** | Rest quality | <7h = 1.7x injury risk |
+| **Sedentary Time** | Daily inactivity | Strongest sleep predictor |
+| **Stress Level** | Mental load | Throttles overnight recovery |
+| **Steps** | Activity level | High variability impacts recovery |
+
+---
+
+## 🔧 All Commands
 
 | Command | Description |
 |---------|-------------|
-| `python main.py fetch --days N` | Fetch N days of data from Garmin |
-| `python main.py analyze` | Run analysis and generate PDF |
-| `python main.py analyze --text` | Show text summary in terminal |
-| `python main.py show` | Display recent data summary |
-| `python main.py status` | Check data and configuration status |
-| `python main.py quickstart` | Interactive setup guide |
-| `python main.py clear` | Delete all cached data |
-| `python main.py logout` | Clear saved Garmin session |
+| `python main.py quickstart` | 🎯 Interactive setup guide |
+| `python main.py fetch --days N` | 📥 Download N days of data |
+| `python main.py analyze` | 📊 Generate PDF report |
+| `python main.py analyze --text` | 📝 Show terminal summary |
+| `python main.py show` | 👀 Display recent data |
+| `python main.py status` | ℹ️ Check data status |
+| `python main.py clear` | 🗑️ Delete cached data |
+| `python main.py logout` | 🚪 Clear Garmin session |
 
-## How It Works
+---
+
+## 🏗️ How It Works
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    Garmin Health Analyzer                    │
-├─────────────────────────────────────────────────────────────┤
+┌──────────────────────────────────────────────────────────────┐
 │                                                              │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐  │
-│  │   Garmin     │───▶│    Data      │───▶│   Analysis   │  │
-│  │   Fetcher    │    │    Store     │    │   Engine     │  │
-│  └──────────────┘    └──────────────┘    └──────────────┘  │
-│         │                   │                   │           │
-│         ▼                   ▼                   ▼           │
-│  garminconnect lib    JSON files          PDF Report       │
+│   You run:  python main.py fetch --days 90                  │
+│                        │                                     │
+│                        ▼                                     │
+│   ┌─────────────────────────────────────────┐               │
+│   │         Garmin Connect API              │               │
+│   │  (via garminconnect library)            │               │
+│   └─────────────────────────────────────────┘               │
+│                        │                                     │
+│                        ▼                                     │
+│   ┌─────────────────────────────────────────┐               │
+│   │         Local JSON Storage              │               │
+│   │   data/daily_summaries/2025-01-15.json  │               │
+│   │   data/sleep/2025-01-15.json            │               │
+│   └─────────────────────────────────────────┘               │
+│                        │                                     │
+│   You run:  python main.py analyze                          │
+│                        │                                     │
+│                        ▼                                     │
+│   ┌─────────────────────────────────────────┐               │
+│   │         Analysis Engine                 │               │
+│   │  • Calculate trends & baselines         │               │
+│   │  • Find correlations                    │               │
+│   │  • Generate recommendations             │               │
+│   └─────────────────────────────────────────┘               │
+│                        │                                     │
+│                        ▼                                     │
+│   ┌─────────────────────────────────────────┐               │
+│   │    Health_Insights_Report.pdf           │  ← Your       │
+│   │    Personalized insights & action plan  │    report!    │
+│   └─────────────────────────────────────────┘               │
 │                                                              │
-└─────────────────────────────────────────────────────────────┘
+└──────────────────────────────────────────────────────────────┘
 ```
 
-1. **Garmin Fetcher** (`garmin_client.py`): Connects to Garmin Connect using the `garminconnect` library and downloads your data.
+---
 
-2. **Data Store** (`data/`): Your data is stored locally as JSON files, organized by type and date.
+## 🔐 Privacy & Security
 
-3. **Analysis Engine** (`data_analyzer.py`): Processes the JSON data to calculate trends, correlations, and recommendations.
+- ✅ **All data stays local** - Nothing sent to external servers
+- ✅ **Credentials never stored** - Session tokens cached temporarily
+- ✅ **Gitignored by default** - Your `data/` folder won't be committed
+- ✅ **Open source** - Inspect exactly what the code does
 
-4. **PDF Generator** (`pdf_generator.py`): Creates a comprehensive report with your insights.
+---
 
-## Data Privacy
+## 🧪 Try It With Sample Data
 
-- Your Garmin credentials are only used to authenticate with Garmin Connect
-- Session tokens are cached locally in `.garmin_session` (gitignored)
-- All your health data stays on your machine in the `data/` directory (gitignored)
-- Nothing is sent to external servers except Garmin Connect for data fetching
+Want to see it in action without connecting your Garmin account?
 
-## Project Structure
+```bash
+# Generate 90 days of realistic sample data
+python generate_sample_data.py
 
-```
-garmin-health-analyzer/
-├── main.py              # CLI entry point
-├── garmin_client.py     # Garmin Connect API wrapper
-├── data_analyzer.py     # Analysis engine
-├── pdf_generator.py     # PDF report generator
-├── config.py            # Configuration handling
-├── requirements.txt     # Python dependencies
-├── README.md            # This file
-├── .gitignore           # Git ignore rules
-└── data/                # Your cached data (gitignored)
-    ├── activities/
-    ├── sleep/
-    ├── heart_rate/
-    └── daily_summaries/
+# Run analysis on sample data
+python -c "from pdf_generator import generate_insights_pdf; generate_insights_pdf('Sample_Report.pdf', 'samples/data')"
+
+# Open Sample_Report.pdf to see example output!
 ```
 
-## Metrics Analyzed
+---
 
-| Metric | What It Tells You |
-|--------|-------------------|
-| **Resting Heart Rate** | Recovery status; rising RHR often indicates fatigue |
-| **Body Battery** | Energy reserves; low wake values suggest recovery deficit |
-| **Sleep Duration** | Total sleep; <7h associated with increased injury risk |
-| **Sedentary Time** | Daily inactivity; strongly correlates with sleep quality |
-| **Stress Level** | Daily stress; affects overnight recovery capacity |
-| **Steps** | Daily activity; high variability may impact recovery |
+## 📚 The Science Behind It
 
-## Troubleshooting
+The insights are based on peer-reviewed research:
 
-### "No data found" error
-Run `python main.py fetch --days 30` first to download your data.
+- **Sleep & Injury Risk**: <7h sleep = 1.7x injury increase ([Milewski et al., 2014](https://pubmed.ncbi.nlm.nih.gov/24509534/))
+- **HRV & Recovery**: RHR trends indicate training adaptation ([Plews et al., 2013](https://pubmed.ncbi.nlm.nih.gov/23852425/))
+- **80/20 Training**: Elite athletes do 80% easy, 20% hard ([Seiler, 2010](https://pubmed.ncbi.nlm.nih.gov/20861519/))
+- **Sedentary Behavior**: Sitting has independent health effects ([Owen et al., 2010](https://pubmed.ncbi.nlm.nih.gov/21123641/))
 
-### Login issues
-- Make sure you're using your Garmin Connect email and password
-- If you use "Sign in with Google", you'll need to set a Garmin password first
-- Run `python main.py logout` to clear cached session and try again
+---
 
-### Missing metrics in report
-Some metrics require specific Garmin devices. The analyzer works with whatever data is available.
+## 🤝 Contributing
 
-## Contributing
+Contributions welcome! Ideas for improvement:
 
-Contributions welcome! Please feel free to submit issues or pull requests.
+- [ ] Add VO2 max trend analysis
+- [ ] Support for activities/workouts analysis
+- [ ] HTML report option
+- [ ] Interactive dashboard
+- [ ] Training load calculations (CTL/ATL/TSB)
 
-### Ideas for Contribution
+---
 
-- Add more analysis types (training load, VO2 max trends, etc.)
-- Support for additional Garmin metrics
-- Export to other formats (HTML, Markdown)
-- Interactive dashboard
+## 📄 License
 
-## License
+MIT License - see [LICENSE](LICENSE) for details.
 
-MIT License - see LICENSE file for details.
+---
 
-## Acknowledgments
+## 🙏 Acknowledgments
 
-- [garminconnect](https://github.com/cyberjunky/python-garminconnect) - Python library for Garmin Connect API
+- [garminconnect](https://github.com/cyberjunky/python-garminconnect) - Garmin Connect API access
 - [fpdf2](https://github.com/py-pdf/fpdf2) - PDF generation
 - [Rich](https://github.com/Textualize/rich) - Beautiful terminal output
 - [Click](https://click.palletsprojects.com/) - CLI framework
 
-## Disclaimer
+---
+
+## ⚠️ Disclaimer
 
 This tool is for informational purposes only. It is not medical advice. Always consult healthcare professionals for health-related decisions.
 
-The insights are based on patterns in your personal data and general health research. Individual results may vary.
+---
+
+<p align="center">
+  <b>Built for runners, cyclists, and health enthusiasts who want to understand their data.</b>
+  <br><br>
+  ⭐ Star this repo if you find it useful!
+</p>
