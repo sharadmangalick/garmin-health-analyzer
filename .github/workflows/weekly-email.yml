@@ -31,7 +31,7 @@ jobs:
           GMAIL_CREDS_B64: ${{ secrets.GMAIL_CREDENTIALS_B64 }}
         run: |
           mkdir -p ~/.gmail-mcp
-          echo "$GMAIL_CREDS_B64" | base64 -d > ~/.gmail-mcp/credentials.json
+          python3 -c "import os,base64; open(os.path.expanduser('~/.gmail-mcp/credentials.json'),'w').write(base64.b64decode(os.environ['GMAIL_CREDS_B64'].strip()).decode())"
           cat ~/.gmail-mcp/credentials.json
 
       - name: Create user config
