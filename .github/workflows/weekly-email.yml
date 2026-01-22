@@ -31,7 +31,7 @@ jobs:
           GMAIL_CREDS: ${{ secrets.GMAIL_CREDENTIALS }}
         run: |
           mkdir -p ~/.gmail-mcp
-          echo "$GMAIL_CREDS" > ~/.gmail-mcp/credentials.json
+          python3 -c "import os,json; creds=os.environ['GMAIL_CREDS']; json.loads(creds); open(os.path.expanduser('~/.gmail-mcp/credentials.json'),'w').write(creds)"
 
       - name: Create user config
         env:
