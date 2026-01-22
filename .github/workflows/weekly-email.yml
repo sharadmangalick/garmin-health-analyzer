@@ -27,14 +27,19 @@ jobs:
           pip install google-api-python-client google-auth
 
       - name: Create Gmail credentials
+        env:
+          GMAIL_CREDS: ${{ secrets.GMAIL_CREDENTIALS }}
         run: |
           mkdir -p ~/.gmail-mcp
-          echo '${{ secrets.GMAIL_CREDENTIALS }}' > ~/.gmail-mcp/credentials.json
+          echo "$GMAIL_CREDS" > ~/.gmail-mcp/credentials.json
 
       - name: Create user config
+        env:
+          USER_CFG: ${{ secrets.USER_CONFIG }}
         run: |
           mkdir -p data
-          echo '${{ secrets.USER_CONFIG }}' > data/user_config.json
+          echo "$USER_CFG" > data/user_config.json
+          cat data/user_config.json
 
       - name: Fetch Garmin data and send email
         env:
