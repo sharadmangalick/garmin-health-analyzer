@@ -56,7 +56,8 @@ class GarminClient:
         self._session_file = config.data_dir / ".garmin_session"
 
     def login(self) -> bool:
-        """Authenticate with Garmin Connect using saved session or browser OAuth."""
+        """Authenticate with Garmin Connect using saved session, env vars, or browser OAuth."""
+        import os
         try:
             self.client = Garmin()
 
@@ -69,8 +70,32 @@ class GarminClient:
                 except Exception:
                     console.print("[yellow]Saved session expired, need to re-authenticate...[/yellow]")
 
-            # No valid session - need browser login
+            # Check for environment variables (for CI/automation)
+            env_email = os.environ.get('GARMIN_EMAIL')
+            env_password = os.environ.get('GARMIN_PASSWORD')
+            if env_email and env_password:
+                return self._env_login(env_email, env_password)
+
+            # No valid session or env vars - need browser login
             return self._browser_login()
+
+        except Exception as e:
+            console.print(f"[red]Login failed: {e}[/red]")
+            return False
+
+    def _env_login(self, email: str, password: str) -> bool:
+        """Authenticate using environment variables (for CI/automation)."""
+        try:
+            console.print("[dim]Logging in with environment credentials...[/dim]")
+            self.client = Garmin(email, password)
+            self.client.login()
+
+            # Save session tokens for future use
+            self._session_file.parent.mkdir(parents=True, exist_ok=True)
+            self.client.garth.dump(str(self._session_file))
+
+            console.print("[green]Successfully logged in to Garmin Connect[/green]")
+            return True
 
         except Exception as e:
             console.print(f"[red]Login failed: {e}[/red]")

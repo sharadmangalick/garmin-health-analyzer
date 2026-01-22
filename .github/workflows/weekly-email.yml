@@ -1,0 +1,51 @@
+name: Weekly Training Email
+
+on:
+  # Run every Sunday at 7:00 AM Pacific (14:00 UTC)
+  schedule:
+    - cron: '0 14 * * 0'
+
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  send-weekly-email:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install google-api-python-client google-auth
+
+      - name: Create Gmail credentials
+        run: |
+          mkdir -p ~/.gmail-mcp
+          echo '${{ secrets.GMAIL_CREDENTIALS }}' > ~/.gmail-mcp/credentials.json
+
+      - name: Create user config
+        run: |
+          mkdir -p data
+          echo '${{ secrets.USER_CONFIG }}' > data/user_config.json
+
+      - name: Fetch Garmin data and send email
+        env:
+          GARMIN_EMAIL: ${{ secrets.GARMIN_EMAIL }}
+          GARMIN_PASSWORD: ${{ secrets.GARMIN_PASSWORD }}
+        run: |
+          python automated_weekly_email.py
+
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs
+          path: logs/
