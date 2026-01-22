@@ -28,10 +28,11 @@ jobs:
 
       - name: Create Gmail credentials
         env:
-          GMAIL_CREDS: ${{ secrets.GMAIL_CREDENTIALS }}
+          GMAIL_CREDS_B64: ${{ secrets.GMAIL_CREDENTIALS_B64 }}
         run: |
           mkdir -p ~/.gmail-mcp
-          python3 -c "import os,json; creds=os.environ['GMAIL_CREDS']; json.loads(creds); open(os.path.expanduser('~/.gmail-mcp/credentials.json'),'w').write(creds)"
+          echo "$GMAIL_CREDS_B64" | base64 -d > ~/.gmail-mcp/credentials.json
+          cat ~/.gmail-mcp/credentials.json
 
       - name: Create user config
         env:
