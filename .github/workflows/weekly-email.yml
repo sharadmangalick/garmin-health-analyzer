@@ -35,10 +35,25 @@ jobs:
 
       - name: Create user config
         env:
-          USER_CFG: ${{ secrets.USER_CONFIG }}
+          EMAIL_ADDR: ${{ secrets.GARMIN_EMAIL }}
         run: |
           mkdir -p data
-          echo "$USER_CFG" > data/user_config.json
+          cat > data/user_config.json << EOF
+          {
+            "email": "${EMAIL_ADDR}",
+            "name": "Sharad",
+            "goal_type": "marathon",
+            "goal_target": "sub-4-hour",
+            "goal_time_minutes": 240,
+            "goal_date": "2026-03-05",
+            "current_weekly_mileage": 35,
+            "experience_level": "intermediate",
+            "preferred_long_run_day": "saturday",
+            "email_day": "sunday",
+            "email_time": "07:00",
+            "timezone": "America/Los_Angeles"
+          }
+          EOF
           cat data/user_config.json
 
       - name: Fetch Garmin data and send email
