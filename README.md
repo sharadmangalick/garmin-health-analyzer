@@ -7,7 +7,7 @@
 
 Turn your Garmin Connect data into actionable health insights. This tool analyzes your sleep, heart rate, VO2 max, stress, and activity patterns to help you train smarter and recover better.
 
-**New:** Now with VO2 max trend analysis and HTML report output!
+**New:** Now with VO2 max trend analysis, HTML reports, and AI-powered weekly training emails!
 
 ---
 
@@ -172,6 +172,76 @@ Stress  36    38    37    40    35    32    30    ← Weekend relief
 | `python main.py clear` | 🗑️ Delete cached data |
 | `python main.py logout` | 🚪 Clear Garmin session |
 
+### Weekly Training Emails
+
+| Command | Description |
+|---------|-------------|
+| `python main.py email setup` | 📧 Configure your training profile |
+| `python main.py email preview` | 👀 Preview weekly training plan |
+| `python main.py email send` | 📤 Generate and queue email for sending |
+| `python main.py email prepare` | 📝 Prepare analysis for Claude Code |
+| `python main.py email schedule` | ⏰ Show scheduling instructions |
+| `python main.py email status` | ℹ️ Check email system status |
+
+---
+
+## 📧 Weekly Training Emails
+
+Get personalized AI-powered training plans delivered to your inbox every week! The system analyzes your Garmin health data and generates custom workouts based on:
+
+- Your race goal and timeline
+- Recovery metrics (RHR, Body Battery, sleep quality)
+- Training phase (base, build, peak, taper)
+- Recent training load
+
+### Quick Setup
+
+```bash
+# 1. Configure your training profile
+python main.py email setup
+
+# 2. Preview your first training plan
+python main.py email preview
+
+# 3. Generate and send the email
+python main.py email send
+```
+
+### Two Modes of Operation
+
+**With Anthropic API Key:**
+```bash
+# Set your API key in .env file
+ANTHROPIC_API_KEY=sk-ant-your-key-here
+
+# Generate and send in one command
+python main.py email send
+```
+
+**With Claude Code (Enterprise users):**
+```bash
+# 1. Prepare analysis context
+python main.py email prepare
+
+# 2. Claude Code generates the training plan
+# (reads context from data/ai_context.json)
+
+# 3. Complete and send with the plan
+python main.py email send --use-plan
+```
+
+### Automated Weekly Emails (macOS)
+
+Set up automatic weekly emails using launchd:
+
+```bash
+# Copy the plist to LaunchAgents
+cp launchd/com.garmin.weekly-report.plist ~/Library/LaunchAgents/
+
+# Load the schedule (runs every Sunday at 7am)
+launchctl load ~/Library/LaunchAgents/com.garmin.weekly-report.plist
+```
+
 ---
 
 ## 🏗️ How It Works
@@ -257,6 +327,7 @@ Contributions welcome! Ideas for improvement:
 
 - [x] ~~Add VO2 max trend analysis~~ ✅ Done!
 - [x] ~~HTML report option~~ ✅ Done!
+- [x] ~~Weekly training emails with AI coaching~~ ✅ Done!
 - [ ] Support for activities/workouts analysis
 - [ ] Interactive dashboard with charts
 - [ ] Training load calculations (CTL/ATL/TSB)

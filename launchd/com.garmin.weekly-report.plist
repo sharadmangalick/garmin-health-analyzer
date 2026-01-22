@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Unique identifier for this job -->
+    <key>Label</key>
+    <string>com.garmin.weekly-report</string>
+
+    <!-- Working directory -->
+    <key>WorkingDirectory</key>
+    <string>/Users/sharadmangalick/Library/CloudStorage/OneDrive-Microsoft/Desktop/vibecoding/Garmin/garmin-health-analyzer</string>
+
+    <!-- Program to run -->
+    <key>ProgramArguments</key>
+    <array>
+        <!-- Path to Python interpreter - update this to your Python path -->
+        <string>/usr/bin/env</string>
+        <string>python3</string>
+        <string>weekly_report.py</string>
+    </array>
+
+    <!-- Schedule: Run every Sunday at 7:00 AM -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <!-- Day of week: 0 = Sunday, 1 = Monday, etc. -->
+        <key>Weekday</key>
+        <integer>0</integer>
+        <!-- Hour (24-hour format) -->
+        <key>Hour</key>
+        <integer>7</integer>
+        <!-- Minute -->
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <!-- Environment variables -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <!-- Set your Anthropic API key here or load from .env -->
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <!-- Uncomment and set your API key if not using .env file -->
+        <!-- <key>ANTHROPIC_API_KEY</key> -->
+        <!-- <string>sk-ant-your-key-here</string> -->
+    </dict>
+
+    <!-- Log output -->
+    <key>StandardOutPath</key>
+    <string>/Users/sharadmangalick/Library/CloudStorage/OneDrive-Microsoft/Desktop/vibecoding/Garmin/garmin-health-analyzer/logs/weekly-report.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/sharadmangalick/Library/CloudStorage/OneDrive-Microsoft/Desktop/vibecoding/Garmin/garmin-health-analyzer/logs/weekly-report-error.log</string>
+
+    <!-- Run even if computer was asleep -->
+    <key>AbandonProcessGroup</key>
+    <true/>
+
+    <!-- Don't throttle if job runs frequently -->
+    <key>ThrottleInterval</key>
+    <integer>60</integer>
+
+    <!-- Keep alive settings - don't restart on failure -->
+    <key>KeepAlive</key>
+    <false/>
+</dict>
+</plist>

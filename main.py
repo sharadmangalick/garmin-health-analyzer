@@ -8,6 +8,7 @@ import click
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
+from rich.prompt import Prompt, Confirm
 
 from config import config
 from garmin_client import GarminClient
@@ -373,6 +374,553 @@ def quickstart():
     console.print("  [cyan]python main.py status[/cyan]          - Check data status")
 
     console.print("\n[green]Happy analyzing![/green]")
+
+
+# ==================== EMAIL COMMAND GROUP ====================
+
+@cli.group()
+def email():
+    """Weekly training email system commands.
+
+    Generate and send personalized weekly training plans based on your
+    Garmin health data and AI-powered coaching recommendations.
+
+    Examples:
+        python main.py email setup      # Configure your profile
+        python main.py email preview    # Preview the weekly plan
+        python main.py email send       # Generate and send report
+        python main.py email schedule   # Show scheduling info
+    """
+    pass
+
+
+@email.command()
+def setup():
+    """Interactive setup wizard for email configuration.
+
+    Configure your:
+    - Email address
+    - Race goal and date
+    - Training preferences
+    """
+    from user_config import UserConfig
+
+    console.print(Panel.fit(
+        "[bold cyan]Weekly Training Email Setup[/bold cyan]\n\n"
+        "This wizard will configure your training email system.\n"
+        "Your settings will be saved for future use.",
+        title="Setup Wizard"
+    ))
+
+    user_config = UserConfig()
+    current = user_config.to_dict()
+
+    console.print("\n[bold]Current Configuration:[/bold]")
+    console.print(f"  Email: {current['email']}")
+    console.print(f"  Name: {current['name']}")
+    console.print(f"  Goal: {current['goal_target']} {current['goal_type']}")
+    console.print(f"  Race Date: {current['goal_date']}")
+    console.print(f"  Weekly Mileage: {current['current_weekly_mileage']} miles")
+
+    if not Confirm.ask("\nWould you like to update these settings?", default=True):
+        console.print("[yellow]Setup cancelled.[/yellow]")
+        return
+
+    # Collect new settings
+    console.print("\n[bold]Enter your settings (press Enter to keep current value):[/bold]\n")
+
+    email_addr = Prompt.ask(
+        "Email address",
+        default=current['email'] if current['email'] != "your@gmail.com" else ""
+    )
+    if email_addr:
+        user_config.update(email=email_addr)
+
+    name = Prompt.ask("Your name", default=current['name'])
+    if name:
+        user_config.update(name=name)
+
+    console.print("\n[bold]Race Goal:[/bold]")
+    goal_type = Prompt.ask(
+        "Race type",
+        choices=["marathon", "half_marathon", "10k", "5k"],
+        default=current['goal_type']
+    )
+    user_config.update(goal_type=goal_type)
+
+    goal_target = Prompt.ask(
+        "Goal target (e.g., 'sub-4-hour', 'sub-2-hour', 'finish')",
+        default=current['goal_target']
+    )
+    user_config.update(goal_target=goal_target)
+
+    # Calculate goal time in minutes
+    goal_time_input = Prompt.ask(
+        "Goal time in minutes (e.g., 240 for 4 hours)",
+        default=str(current['goal_time_minutes'])
+    )
+    try:
+        goal_time = int(goal_time_input)
+        user_config.update(goal_time_minutes=goal_time)
+    except ValueError:
+        console.print("[yellow]Invalid time, keeping current value[/yellow]")
+
+    goal_date = Prompt.ask(
+        "Race date (YYYY-MM-DD)",
+        default=current['goal_date']
+    )
+    user_config.update(goal_date=goal_date)
+
+    console.print("\n[bold]Training Preferences:[/bold]")
+    weekly_mileage = Prompt.ask(
+        "Current weekly mileage",
+        default=str(current['current_weekly_mileage'])
+    )
+    try:
+        user_config.update(current_weekly_mileage=int(weekly_mileage))
+    except ValueError:
+        pass
+
+    experience = Prompt.ask(
+        "Experience level",
+        choices=["beginner", "intermediate", "advanced"],
+        default=current['experience_level']
+    )
+    user_config.update(experience_level=experience)
+
+    long_run_day = Prompt.ask(
+        "Preferred long run day",
+        choices=["saturday", "sunday"],
+        default=current['preferred_long_run_day']
+    )
+    user_config.update(preferred_long_run_day=long_run_day)
+
+    # Save and show summary
+    user_config.save()
+
+    console.print("\n[green]Configuration saved![/green]\n")
+
+    # Show summary
+    updated = user_config.to_dict()
+    table = Table(title="Your Training Profile")
+    table.add_column("Setting", style="cyan")
+    table.add_column("Value", style="green")
+
+    table.add_row("Email", updated['email'])
+    table.add_row("Name", updated['name'])
+    table.add_row("Goal", f"{updated['goal_target']} {updated['goal_type']}")
+    table.add_row("Race Date", updated['goal_date'])
+    table.add_row("Weeks to Race", str(updated['weeks_until_race']))
+    table.add_row("Training Phase", updated['training_phase'].title())
+    table.add_row("Target Pace", f"{updated['target_pace']}/mile")
+    table.add_row("Weekly Mileage", f"{updated['current_weekly_mileage']} miles")
+
+    console.print(table)
+
+    console.print("\n[bold]Next Steps:[/bold]")
+    console.print("  1. Ensure ANTHROPIC_API_KEY is set in your .env file")
+    console.print("  2. Run [cyan]python main.py email preview[/cyan] to test")
+    console.print("  3. Run [cyan]python main.py email send[/cyan] to generate and send")
+
+
+@email.command()
+@click.option("--days", "-d", default=14, help="Days of data to analyze (default: 14)")
+@click.option("--no-fetch", is_flag=True, help="Use cached data, don't fetch new data")
+def preview(days: int, no_fetch: bool):
+    """Preview the weekly training plan without sending.
+
+    Generates a training plan based on your Garmin data and displays
+    it in the console. Useful for testing before sending.
+
+    For enterprise users (no API key): This prepares the analysis context.
+    Use Claude Code to generate the training plan from the context file.
+
+    Examples:
+        python main.py email preview
+        python main.py email preview --no-fetch
+        python main.py email preview -d 30
+    """
+    from weekly_report import WeeklyReportGenerator
+
+    console.print(Panel("Generating Training Plan Preview", title="Preview"))
+
+    try:
+        generator = WeeklyReportGenerator()
+
+        # Check configuration
+        if not generator.user_config.is_configured():
+            console.print("[yellow]Warning: User not configured. Run 'python main.py email setup' first.[/yellow]")
+            console.print("[yellow]Using default settings...[/yellow]\n")
+
+        # Check if API key is available
+        has_api_key = config.has_anthropic_key()
+
+        if has_api_key:
+            # Full workflow with API
+            with console.status("[bold blue]Generating report..."):
+                result = generator.generate_full_report(
+                    fetch_data=not no_fetch,
+                    days=days,
+                    use_mcp=False
+                )
+
+            # Display preview
+            console.print("\n" + "=" * 60)
+            console.print(generator.get_preview_text())
+            console.print("=" * 60 + "\n")
+
+            # Show email subject
+            console.print(f"[bold]Email Subject:[/bold] {result['email']['subject']}\n")
+
+            # Save HTML preview
+            html_path = config.data_dir / "preview_email.html"
+            with open(html_path, 'w') as f:
+                f.write(result['email']['html_body'])
+            console.print(f"[green]HTML preview saved to: {html_path}[/green]")
+            console.print("Open this file in a browser to see the full email.\n")
+        else:
+            # Enterprise workflow - prepare for Claude Code
+            console.print("[yellow]No API key found - using Claude Code workflow[/yellow]\n")
+
+            with console.status("[bold blue]Analyzing data..."):
+                result = generator.prepare_analysis_only(
+                    fetch_data=not no_fetch,
+                    days=days,
+                    use_mcp=False
+                )
+
+            console.print("[green]Analysis complete![/green]\n")
+
+            # Show analysis summary
+            console.print("[bold]Analysis Summary:[/bold]")
+            analysis = result['analysis']
+            if analysis.get('resting_hr', {}).get('available'):
+                rhr = analysis['resting_hr']
+                console.print(f"  Resting HR: {rhr.get('current')} bpm (trend: {rhr.get('trend')})")
+            if analysis.get('body_battery', {}).get('available'):
+                bb = analysis['body_battery']
+                console.print(f"  Body Battery: {bb.get('current_wake')} wake avg (trend: {bb.get('trend')})")
+            if analysis.get('sleep', {}).get('available'):
+                sleep = analysis['sleep']
+                console.print(f"  Sleep: {sleep.get('avg_hours')} hrs avg")
+
+            console.print(f"\n[bold]Context saved to:[/bold] {result['context_file']}")
+            console.print("\n[bold cyan]Next Steps (for Claude Code):[/bold cyan]")
+            console.print("  1. Read the context file above")
+            console.print("  2. Generate a training plan following the format in the context")
+            console.print("  3. Save the plan to data/training_plan.json")
+            console.print("  4. Run: python main.py email send --use-plan")
+
+    except Exception as e:
+        console.print(f"[red]Error generating preview: {e}[/red]")
+        raise click.Abort()
+
+
+@email.command()
+@click.option("--days", "-d", default=14, help="Days of data to analyze (default: 14)")
+@click.option("--no-fetch", is_flag=True, help="Use cached data, don't fetch new data")
+@click.option("--use-plan", is_flag=True, help="Use existing training plan from data/training_plan.json")
+@click.option("--plan-file", type=click.Path(exists=True), help="Path to training plan JSON file")
+def send(days: int, no_fetch: bool, use_plan: bool, plan_file: str):
+    """Generate and queue weekly training report for sending.
+
+    This generates the full report and saves it for sending via Gmail MCP.
+
+    For enterprise users (no API key):
+      1. First run 'email preview' to generate analysis
+      2. Have Claude Code generate the training plan
+      3. Run 'email send --use-plan' to complete and send
+
+    Examples:
+        python main.py email send
+        python main.py email send --no-fetch
+        python main.py email send --use-plan
+        python main.py email send --plan-file path/to/plan.json
+    """
+    import json as json_module
+    from weekly_report import WeeklyReportGenerator
+
+    console.print(Panel("Generating Weekly Training Report", title="Send Report"))
+
+    try:
+        generator = WeeklyReportGenerator()
+
+        # Check configuration
+        if not generator.user_config.is_configured():
+            console.print("[red]Error: User not configured.[/red]")
+            console.print("Run [cyan]python main.py email setup[/cyan] first.")
+            raise click.Abort()
+
+        training_plan = None
+
+        # Load existing plan if specified
+        if plan_file:
+            with open(plan_file, 'r') as f:
+                training_plan = json_module.load(f)
+            console.print(f"[green]Loaded training plan from: {plan_file}[/green]\n")
+        elif use_plan:
+            default_plan_path = config.data_dir / "training_plan.json"
+            if not default_plan_path.exists():
+                console.print("[red]Error: No training plan found at data/training_plan.json[/red]")
+                console.print("Generate a plan first or specify --plan-file")
+                raise click.Abort()
+            with open(default_plan_path, 'r') as f:
+                training_plan = json_module.load(f)
+            console.print(f"[green]Loaded training plan from: {default_plan_path}[/green]\n")
+
+        # Check if we have a plan or can generate one
+        has_api_key = config.has_anthropic_key()
+
+        if training_plan is None and not has_api_key:
+            console.print("[yellow]No API key found and no training plan provided.[/yellow]")
+            console.print("\n[bold]Enterprise User Workflow:[/bold]")
+            console.print("  1. Run [cyan]python main.py email preview[/cyan] to prepare analysis")
+            console.print("  2. Have Claude Code generate the training plan from the context")
+            console.print("  3. Save the plan to data/training_plan.json")
+            console.print("  4. Run [cyan]python main.py email send --use-plan[/cyan]")
+            raise click.Abort()
+
+        # Generate report
+        with console.status("[bold blue]Generating report..."):
+            if training_plan:
+                # First run analysis, then complete with provided plan
+                generator.prepare_analysis_only(
+                    fetch_data=not no_fetch,
+                    days=days,
+                    use_mcp=False
+                )
+                result = generator.complete_report(training_plan)
+            else:
+                # Full workflow with API key
+                result = generator.generate_full_report(
+                    fetch_data=not no_fetch,
+                    days=days,
+                    use_mcp=False
+                )
+
+        console.print("\n[green]Report generated successfully![/green]\n")
+
+        # Show summary
+        table = Table(title="Report Summary")
+        table.add_column("Field", style="cyan")
+        table.add_column("Value", style="green")
+
+        table.add_row("Recipient", generator.user_config.email)
+        table.add_row("Subject", result['email']['subject'])
+        table.add_row("Email File", result['email_file'])
+
+        week_summary = result['training_plan'].get('week_summary', {})
+        table.add_row("Total Miles", str(week_summary.get('total_miles', 'N/A')))
+        table.add_row("Training Phase", week_summary.get('training_phase', 'N/A').title())
+
+        console.print(table)
+
+        console.print("\n[bold]To send the email:[/bold]")
+        console.print("  If using Claude Code with Gmail MCP:")
+        email_file = result['email_file']
+        console.print(f"    Ask Claude to 'Send the email at {email_file}'")
+        console.print("\n  Or manually send via your email client using the HTML content.")
+
+    except click.Abort:
+        raise
+    except Exception as e:
+        console.print(f"[red]Error generating report: {e}[/red]")
+        raise click.Abort()
+
+
+@email.command()
+@click.option("--days", "-d", default=14, help="Days of data to analyze (default: 14)")
+@click.option("--no-fetch", is_flag=True, help="Use cached data, don't fetch new data")
+def prepare(days: int, no_fetch: bool):
+    """Prepare analysis and context for Claude Code to generate training plan.
+
+    This is for enterprise users who don't have a standalone API key.
+    The workflow is:
+      1. Run this command to fetch data and create analysis context
+      2. Claude Code reads the context and generates a training plan
+      3. Run 'email send --use-plan' to create and queue the email
+
+    Examples:
+        python main.py email prepare
+        python main.py email prepare --days 30
+    """
+    from weekly_report import WeeklyReportGenerator
+
+    console.print(Panel("Preparing Analysis for Claude Code", title="Prepare"))
+
+    try:
+        generator = WeeklyReportGenerator()
+
+        # Check configuration
+        if not generator.user_config.is_configured():
+            console.print("[yellow]Warning: User not configured. Run 'python main.py email setup' first.[/yellow]\n")
+
+        with console.status("[bold blue]Fetching and analyzing data..."):
+            result = generator.prepare_analysis_only(
+                fetch_data=not no_fetch,
+                days=days,
+                use_mcp=False
+            )
+
+        console.print("[green]Analysis complete![/green]\n")
+
+        # Show user config summary
+        user = result['user_config']
+        console.print("[bold]User Profile:[/bold]")
+        console.print(f"  Name: {user['name']}")
+        console.print(f"  Goal: {user['goal_target']} {user['goal_type']}")
+        console.print(f"  Race Date: {user['goal_date']} ({user['weeks_until_race']} weeks away)")
+        console.print(f"  Training Phase: {user['training_phase']}")
+        console.print(f"  Target Pace: {user['target_pace']}/mile")
+
+        # Show analysis summary
+        console.print("\n[bold]Health Analysis:[/bold]")
+        analysis = result['analysis']
+
+        if analysis.get('resting_hr', {}).get('available'):
+            rhr = analysis['resting_hr']
+            status = "[green]Good[/green]" if rhr.get('status') == 'good' else "[yellow]Normal[/yellow]" if rhr.get('status') == 'normal' else "[red]Concern[/red]"
+            console.print(f"  Resting HR: {rhr.get('current')} bpm ({rhr.get('trend')}) - {status}")
+
+        if analysis.get('body_battery', {}).get('available'):
+            bb = analysis['body_battery']
+            status = "[green]Good[/green]" if bb.get('status') == 'good' else "[yellow]Normal[/yellow]" if bb.get('status') == 'normal' else "[red]Concern[/red]"
+            console.print(f"  Body Battery: {bb.get('current_wake')} wake avg ({bb.get('trend')}) - {status}")
+
+        if analysis.get('sleep', {}).get('available'):
+            sleep = analysis['sleep']
+            status = "[green]Good[/green]" if sleep.get('status') == 'good' else "[yellow]Normal[/yellow]" if sleep.get('status') == 'normal' else "[red]Concern[/red]"
+            console.print(f"  Sleep: {sleep.get('avg_hours')} hrs avg - {status}")
+
+        if analysis.get('stress', {}).get('available'):
+            stress = analysis['stress']
+            console.print(f"  Stress: {stress.get('avg')} avg ({stress.get('high_stress_pct')}% high stress days)")
+
+        console.print(f"\n[bold]Context file:[/bold] {result['context_file']}")
+        console.print(f"[bold]Training plan output:[/bold] {config.data_dir / 'training_plan.json'}")
+
+        console.print("\n" + "=" * 60)
+        console.print("[bold cyan]NEXT STEP FOR CLAUDE CODE:[/bold cyan]")
+        console.print("=" * 60)
+        console.print(f"""
+Read the context file at: {result['context_file']}
+
+Generate a 7-day training plan as JSON with this structure:
+{{
+  "week_summary": {{"total_miles": <num>, "training_phase": "<phase>", "focus": "<text>"}},
+  "daily_plan": [
+    {{"day": "Monday", "workout_type": "<type>", "title": "<title>",
+     "distance_miles": <num>, "description": "<text>", "notes": "<text>"}}
+    ... (all 7 days)
+  ],
+  "coaching_notes": ["<note1>", "<note2>", "<note3>"],
+  "recovery_recommendations": ["<rec1>"] (if needed based on health data)
+}}
+
+Save the plan to: {config.data_dir / 'training_plan.json'}
+
+Then run: python main.py email send --use-plan
+""")
+
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise click.Abort()
+
+
+@email.command()
+def schedule():
+    """Show scheduling information for automated weekly reports.
+
+    Displays instructions for setting up automated weekly emails
+    using macOS launchd.
+    """
+    from user_config import user_config
+
+    console.print(Panel("Scheduling Weekly Reports", title="Schedule"))
+
+    current = user_config.to_dict()
+
+    console.print(f"[bold]Current Schedule Settings:[/bold]")
+    console.print(f"  Email Day: {current['email_day'].title()}")
+    console.print(f"  Email Time: {current['email_time']}")
+    console.print(f"  Timezone: {current['timezone']}")
+
+    console.print("\n[bold]To set up automated weekly emails:[/bold]")
+    console.print("\n1. Copy the launchd plist to your LaunchAgents folder:")
+    console.print("   [cyan]cp launchd/com.garmin.weekly-report.plist ~/Library/LaunchAgents/[/cyan]")
+
+    console.print("\n2. Edit the plist to set the correct paths and schedule:")
+    console.print("   [cyan]nano ~/Library/LaunchAgents/com.garmin.weekly-report.plist[/cyan]")
+
+    console.print("\n3. Load the schedule:")
+    console.print("   [cyan]launchctl load ~/Library/LaunchAgents/com.garmin.weekly-report.plist[/cyan]")
+
+    console.print("\n4. Verify it's loaded:")
+    console.print("   [cyan]launchctl list | grep garmin[/cyan]")
+
+    console.print("\n[bold]To unload/stop:[/bold]")
+    console.print("   [cyan]launchctl unload ~/Library/LaunchAgents/com.garmin.weekly-report.plist[/cyan]")
+
+    console.print("\n[bold]Note:[/bold] For Gmail MCP integration, you'll need to run this through")
+    console.print("Claude Code or set up a script that handles the email sending.")
+
+
+@email.command()
+def status():
+    """Show current email system status and configuration."""
+    from user_config import user_config
+
+    console.print(Panel("Email System Status", title="Status"))
+
+    # Check user config
+    console.print("[bold]User Configuration:[/bold]")
+    if user_config.is_configured():
+        console.print(f"  [green]Configured[/green] - Email: {user_config.email}")
+        console.print(f"  Name: {user_config.name}")
+        console.print(f"  Goal: {user_config.goal_target} {user_config.goal_type}")
+        console.print(f"  Race Date: {user_config.goal_date}")
+        console.print(f"  Weeks to Race: {user_config.weeks_until_race()}")
+    else:
+        console.print("  [yellow]Not configured[/yellow] - Run 'python main.py email setup'")
+
+    # Check API key
+    console.print("\n[bold]API Configuration:[/bold]")
+    if config.has_anthropic_key():
+        console.print("  [green]ANTHROPIC_API_KEY: Set[/green] (direct API mode)")
+    else:
+        console.print("  [yellow]ANTHROPIC_API_KEY: Not set[/yellow] (Claude Code mode)")
+        console.print("  [dim]Enterprise users: Use 'email prepare' + Claude Code workflow[/dim]")
+
+    # Check Garmin session
+    console.print("\n[bold]Garmin Connection:[/bold]")
+    if config.has_garmin_session():
+        console.print("  [green]Session saved[/green] - Will auto-login")
+    else:
+        console.print("  [yellow]No session[/yellow] - Will prompt for login")
+
+    # Check data
+    console.print("\n[bold]Data Status:[/bold]")
+    if config.daily_summaries_dir.exists():
+        count = len(list(config.daily_summaries_dir.glob("*.json")))
+        if count > 0:
+            console.print(f"  [green]{count} days of data available[/green]")
+        else:
+            console.print("  [yellow]No data[/yellow] - Run 'python main.py fetch'")
+    else:
+        console.print("  [yellow]No data[/yellow] - Run 'python main.py fetch'")
+
+    # Check email queue
+    console.print("\n[bold]Email Queue:[/bold]")
+    if config.email_queue_dir.exists():
+        pending = list(config.email_queue_dir.glob("*.json"))
+        if pending:
+            console.print(f"  [yellow]{len(pending)} emails pending[/yellow]")
+            for p in pending[:3]:
+                console.print(f"    - {p.name}")
+        else:
+            console.print("  [dim]No pending emails[/dim]")
+    else:
+        console.print("  [dim]No pending emails[/dim]")
 
 
 if __name__ == "__main__":

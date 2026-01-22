@@ -1,6 +1,7 @@
 # Environment and credentials
 .env
 *.env
+.mcp.json
 
 # Garmin session (contains auth tokens)
 .garmin_session
