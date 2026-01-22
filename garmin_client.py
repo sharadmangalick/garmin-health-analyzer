@@ -264,6 +264,38 @@ class GarminClient:
         console.print(f"[green]Fetched {len(all_summaries)} daily summaries[/green]")
         return all_summaries
 
+    def fetch_vo2max(self, days: int = 7, force: bool = False) -> list[dict]:
+        """Fetch VO2 max data for the specified number of days."""
+        all_vo2max = []
+        end_date = date.today()
+
+        console.print(f"[blue]Fetching VO2 max data for last {days} days...[/blue]")
+
+        for i in range(days):
+            current_date = end_date - timedelta(days=i)
+            filepath = config.vo2max_dir / f"{current_date.isoformat()}.json"
+
+            # Check cache
+            if not force and filepath.exists():
+                cached = self._load_json(filepath)
+                if cached:
+                    all_vo2max.append(cached)
+                    continue
+
+            try:
+                # Get max metrics which includes VO2 max
+                vo2max_data = self.client.get_max_metrics(current_date.isoformat())
+                if vo2max_data:
+                    vo2max_data['_date'] = current_date.isoformat()
+                    self._save_json(vo2max_data, filepath)
+                    all_vo2max.append(vo2max_data)
+            except Exception as e:
+                # VO2 max not available for all days, skip silently
+                pass
+
+        console.print(f"[green]Fetched {len(all_vo2max)} VO2 max records[/green]")
+        return all_vo2max
+
     def fetch_all(self, days: int = 7, force: bool = False) -> dict:
         """Fetch all data types for the specified number of days."""
         return {
@@ -271,4 +303,5 @@ class GarminClient:
             "sleep": self.fetch_sleep(days, force),
             "heart_rate": self.fetch_heart_rate(days, force),
             "daily_summaries": self.fetch_daily_summaries(days, force),
+            "vo2max": self.fetch_vo2max(days, force),
         }

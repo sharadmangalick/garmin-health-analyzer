@@ -29,6 +29,7 @@ class GarminDataAnalyzer:
         self.daily_summaries = []
         self.sleep_data = []
         self.heart_rate_data = []
+        self.vo2max_data = []
         self.analysis_results = {}
 
     def load_data(self) -> dict:
@@ -37,6 +38,7 @@ class GarminDataAnalyzer:
             'daily_summaries': 0,
             'sleep': 0,
             'heart_rate': 0,
+            'vo2max': 0,
             'date_range': None
         }
 
@@ -79,6 +81,20 @@ class GarminDataAnalyzer:
                     continue
             results['heart_rate'] = len(self.heart_rate_data)
 
+        # Load VO2 max data
+        vo2max_dir = self.data_dir / "vo2max"
+        if vo2max_dir.exists():
+            for file in sorted(vo2max_dir.glob("*.json")):
+                try:
+                    with open(file, 'r') as f:
+                        data = json.load(f)
+                        if '_date' not in data:
+                            data['_date'] = file.stem
+                        self.vo2max_data.append(data)
+                except (json.JSONDecodeError, IOError):
+                    continue
+            results['vo2max'] = len(self.vo2max_data)
+
         # Calculate date range
         if self.daily_summaries:
             dates = [d['_date'] for d in self.daily_summaries]
@@ -95,6 +111,7 @@ class GarminDataAnalyzer:
             'overview': self._analyze_overview(),
             'resting_hr': self._analyze_resting_hr(),
             'body_battery': self._analyze_body_battery(),
+            'vo2max': self._analyze_vo2max(),
             'sleep': self._analyze_sleep(),
             'sedentary': self._analyze_sedentary(),
             'stress': self._analyze_stress(),
@@ -220,6 +237,76 @@ class GarminDataAnalyzer:
             'max_wake': max(all_highs),
             'trend': 'declining' if change < -5 else ('improving' if change > 5 else 'stable'),
             'status': 'concern' if recent < 60 else ('good' if recent >= 75 else 'normal'),
+        }
+
+    def _analyze_vo2max(self) -> dict:
+        """Analyze VO2 max trends."""
+        vo2_values = []
+
+        for record in self.vo2max_data:
+            # Handle different VO2 max data structures from Garmin
+            vo2 = None
+
+            # Try generic field
+            if 'generic' in record:
+                vo2 = record['generic'].get('vo2MaxValue')
+
+            # Try running specific
+            if vo2 is None and 'running' in record:
+                vo2 = record['running'].get('vo2MaxValue')
+
+            # Try cycling specific
+            if vo2 is None and 'cycling' in record:
+                vo2 = record['cycling'].get('vo2MaxValue')
+
+            # Try direct field
+            if vo2 is None:
+                vo2 = record.get('vo2MaxValue') or record.get('vo2Max')
+
+            if vo2 and vo2 > 0:
+                vo2_values.append({
+                    'date': record.get('_date', ''),
+                    'vo2max': vo2,
+                })
+
+        if not vo2_values:
+            return {'available': False}
+
+        all_vo2 = [v['vo2max'] for v in vo2_values]
+
+        # Calculate baseline (first readings) vs recent
+        first_readings = all_vo2[:7] if len(all_vo2) >= 7 else all_vo2
+        last_readings = all_vo2[-7:] if len(all_vo2) >= 7 else all_vo2
+
+        baseline = statistics.mean(first_readings)
+        recent = statistics.mean(last_readings)
+        change = recent - baseline
+
+        # Determine fitness level (general categories)
+        # These are approximate and vary by age/gender
+        if recent >= 55:
+            fitness_level = 'Excellent'
+        elif recent >= 50:
+            fitness_level = 'Very Good'
+        elif recent >= 45:
+            fitness_level = 'Good'
+        elif recent >= 40:
+            fitness_level = 'Fair'
+        else:
+            fitness_level = 'Needs Improvement'
+
+        return {
+            'available': True,
+            'baseline': round(baseline, 1),
+            'current': round(recent, 1),
+            'change': round(change, 1),
+            'min': round(min(all_vo2), 1),
+            'max': round(max(all_vo2), 1),
+            'avg': round(statistics.mean(all_vo2), 1),
+            'fitness_level': fitness_level,
+            'trend': 'improving' if change > 1 else ('declining' if change < -1 else 'stable'),
+            'status': 'good' if change >= 0 else ('concern' if change < -2 else 'normal'),
+            'readings': len(all_vo2),
         }
 
     def _analyze_sleep(self) -> dict:
@@ -684,6 +771,10 @@ class GarminDataAnalyzer:
         if bb.get('available'):
             lines.append(f"Body Battery: {bb['current_wake']} wake avg (baseline: {bb['baseline_wake']})")
 
+        vo2 = self.analysis_results.get('vo2max', {})
+        if vo2.get('available'):
+            lines.append(f"VO2 Max: {vo2['current']} ml/kg/min ({vo2['fitness_level']}, {vo2['change']:+.1f} change)")
+
         sleep = self.analysis_results.get('sleep', {})
         if sleep.get('available'):
             lines.append(f"Sleep: {sleep['avg_hours']} hrs avg ({sleep['under_6h_pct']}% nights under 6h)")
@@ -709,6 +800,7 @@ def main():
     print(f"  Daily summaries: {load_result['daily_summaries']}")
     print(f"  Sleep records: {load_result['sleep']}")
     print(f"  Heart rate records: {load_result['heart_rate']}")
+    print(f"  VO2 max records: {load_result['vo2max']}")
 
     if load_result['date_range']:
         print(f"  Date range: {load_result['date_range'][0]} to {load_result['date_range'][1]}")

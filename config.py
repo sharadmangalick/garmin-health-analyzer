@@ -31,6 +31,10 @@ class Config:
         return self.data_dir / "daily_summaries"
 
     @property
+    def vo2max_dir(self) -> Path:
+        return self.data_dir / "vo2max"
+
+    @property
     def session_file(self) -> Path:
         return self.data_dir / ".garmin_session"
 
@@ -44,6 +48,7 @@ class Config:
         self.sleep_dir.mkdir(parents=True, exist_ok=True)
         self.heart_rate_dir.mkdir(parents=True, exist_ok=True)
         self.daily_summaries_dir.mkdir(parents=True, exist_ok=True)
+        self.vo2max_dir.mkdir(parents=True, exist_ok=True)
 
 
 # Global config instance

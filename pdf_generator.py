@@ -146,6 +146,19 @@ def generate_insights_pdf(output_path: str = None, data_dir: str = "data") -> st
                 f"+{stress['high_stress_recharge']} on high-stress nights. Stress management may matter more than sleep duration."
             )
 
+    vo2 = results.get('vo2max', {})
+    if vo2.get('available'):
+        if vo2.get('change', 0) > 1:
+            summary_points.append(
+                f"FITNESS GAINS: Your VO2 max has improved from {vo2['baseline']} to {vo2['current']} ml/kg/min "
+                f"({vo2['change']:+.1f}), indicating improved cardiovascular fitness."
+            )
+        elif vo2.get('change', 0) < -1:
+            summary_points.append(
+                f"FITNESS ALERT: Your VO2 max has dropped from {vo2['baseline']} to {vo2['current']} ml/kg/min "
+                f"({vo2['change']:+.1f}). Consider adding more aerobic training."
+            )
+
     if not summary_points:
         summary_points.append(
             "Your metrics appear relatively stable. Review the detailed analysis below for specific patterns and opportunities."
@@ -195,6 +208,26 @@ def generate_insights_pdf(output_path: str = None, data_dir: str = "data") -> st
             pdf.multi_cell(0, 4,
                 'Note: Waking below 60 suggests chronic recovery deficit. '
                 'Focus on sleep quality and stress reduction.')
+        pdf.ln(4)
+
+    # VO2 Max
+    vo2 = results.get('vo2max', {})
+    if vo2.get('available'):
+        pdf.subsection('VO2 Max')
+        pdf.set_font('Helvetica', '', 9)
+
+        pdf.key_value('Baseline', f"{vo2['baseline']} ml/kg/min")
+        pdf.key_value('Current', f"{vo2['current']} ml/kg/min")
+        pdf.key_value('Change', f"{vo2['change']:+.1f} ml/kg/min")
+        pdf.key_value('Range', f"{vo2['min']} - {vo2['max']} ml/kg/min")
+        pdf.key_value('Fitness Level', vo2['fitness_level'])
+        pdf.key_value('Trend', vo2['trend'].title())
+
+        pdf.ln(2)
+        pdf.set_font('Helvetica', 'I', 8)
+        pdf.multi_cell(0, 4,
+            'Note: VO2 max measures your cardiovascular fitness. Higher values indicate '
+            'better aerobic capacity. Improvements typically come from consistent endurance training.')
         pdf.ln(4)
 
     # Sleep

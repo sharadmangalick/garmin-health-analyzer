@@ -12,9 +12,11 @@ def generate_sample_data(output_dir: str = "samples/data", days: int = 90):
     output_path = Path(output_dir)
     summaries_dir = output_path / "daily_summaries"
     sleep_dir = output_path / "sleep"
+    vo2max_dir = output_path / "vo2max"
 
     summaries_dir.mkdir(parents=True, exist_ok=True)
     sleep_dir.mkdir(parents=True, exist_ok=True)
+    vo2max_dir.mkdir(parents=True, exist_ok=True)
 
     end_date = datetime(2026, 1, 15)
 
@@ -143,9 +145,39 @@ def generate_sample_data(output_dir: str = "samples/data", days: int = 90):
         with open(sleep_dir / f"{date_str}.json", 'w') as f:
             json.dump(sleep_data, f, indent=2)
 
+        # VO2 Max data: gradual improvement with training, then plateau
+        # Only generate VO2 max on workout days (not every day)
+        if dow in [1, 3, 5]:  # Tue, Thu, Sat - workout days
+            # VO2 max improves with training, then stabilizes
+            if phase_progress < 0.3:
+                base_vo2 = 48
+            elif phase_progress < 0.6:
+                base_vo2 = 48 + (phase_progress - 0.3) * 20  # Improvement phase
+            else:
+                base_vo2 = 54 + (phase_progress - 0.6) * 5  # Plateau/slight gain
+
+            vo2_value = round(base_vo2 + random.gauss(0, 1), 1)
+            vo2_value = max(40, min(60, vo2_value))
+
+            vo2max_data = {
+                '_date': date_str,
+                'generic': {
+                    'vo2MaxValue': vo2_value,
+                    'calendarDate': date_str,
+                },
+                'running': {
+                    'vo2MaxValue': vo2_value,
+                    'calendarDate': date_str,
+                }
+            }
+
+            with open(vo2max_dir / f"{date_str}.json", 'w') as f:
+                json.dump(vo2max_data, f, indent=2)
+
     print(f"Generated {days} days of sample data in {output_dir}/")
     print(f"  - Daily summaries: {summaries_dir}")
     print(f"  - Sleep data: {sleep_dir}")
+    print(f"  - VO2 max data: {vo2max_dir}")
 
 
 if __name__ == "__main__":

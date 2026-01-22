@@ -5,7 +5,9 @@
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
-Turn your Garmin Connect data into actionable health insights. This tool analyzes your sleep, heart rate, stress, and activity patterns to help you train smarter and recover better.
+Turn your Garmin Connect data into actionable health insights. This tool analyzes your sleep, heart rate, VO2 max, stress, and activity patterns to help you train smarter and recover better.
+
+**New:** Now with VO2 max trend analysis and HTML report output!
 
 ---
 
@@ -16,18 +18,18 @@ Turn your Garmin Connect data into actionable health insights. This tool analyze
 │                    YOUR HEALTH INSIGHTS                         │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
-│  📉 Recovery Trends      │  😴 Sleep Patterns                  │
-│  ─────────────────       │  ────────────────                   │
-│  RHR: 45 → 49 bpm        │  Avg: 6.2 hrs                       │
-│  Body Battery: 85 → 72   │  Best day: Sunday                   │
-│  Status: Accumulated     │  Worst: Friday                      │
-│          fatigue         │  (social nights!)                   │
+│  📉 Recovery Trends      │  🫁 VO2 Max Fitness                 │
+│  ─────────────────       │  ─────────────────                  │
+│  RHR: 45 → 49 bpm        │  Current: 52 ml/kg/min             │
+│  Body Battery: 85 → 72   │  Trend: +3.2 improvement           │
+│  Status: Accumulated     │  Level: Very Good                   │
+│          fatigue         │                                     │
 │                          │                                     │
-│  🪑 Sedentary Impact     │  😰 Stress & Recovery               │
-│  ──────────────────      │  ─────────────────                  │
-│  >17h sitting = 5h sleep │  Low stress: +80 BB                 │
-│  <14h sitting = 7h sleep │  High stress: +46 BB                │
-│  Key lever identified!   │  Stress > sleep duration            │
+│  😴 Sleep Patterns       │  😰 Stress & Recovery               │
+│  ────────────────        │  ─────────────────                  │
+│  Avg: 6.2 hrs            │  Low stress: +80 BB                 │
+│  Best day: Sunday        │  High stress: +46 BB                │
+│  Worst: Friday           │  Stress > sleep duration            │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -45,11 +47,12 @@ pip install -r requirements.txt
 # 2. Fetch your data (you'll be prompted for Garmin credentials)
 python main.py fetch --days 90
 
-# 3. Generate your personalized report
-python main.py analyze
+# 3. Generate your personalized report (PDF or HTML)
+python main.py analyze              # PDF report
+python main.py analyze --html       # Interactive HTML report
 ```
 
-That's it! Open `Health_Insights_Report.pdf` to see your insights.
+That's it! Open `Health_Insights_Report.pdf` or `.html` to see your insights.
 
 ---
 
@@ -73,6 +76,7 @@ Days analyzed: 90
 
 Resting HR: 48.9 bpm (baseline: 44.7, +4.1 change)
 Body Battery: 80 wake avg (baseline: 87)
+VO2 Max: 52.3 ml/kg/min (Very Good, +3.2 change)
 Sleep: 6.0 hrs avg (46% nights under 6h)
 Stress: 37 avg (26% days above 45)
 
@@ -82,18 +86,22 @@ Stress: 37 avg (26% days above 45)
 [MEDIUM] Movement: Add movement breaks every 90 minutes
 ```
 
-### PDF Report Preview
+### Report Preview (PDF & HTML)
 
-The generated PDF includes:
+Choose your format:
+- **PDF** - Traditional printable report
+- **HTML** - Interactive, responsive web report with modern styling
 
-| Page | Contents |
-|------|----------|
-| **1. Title & Summary** | Executive summary with key findings |
-| **2. Key Metrics** | RHR, Body Battery, Sleep, Stress trends |
-| **3. Patterns** | Sedentary correlations, day-of-week analysis |
-| **4. Recommendations** | Prioritized, personalized action items |
-| **5. Monthly Trends** | How your metrics changed over time |
-| **6. Science** | Research backing the insights |
+Both formats include:
+
+| Section | Contents |
+|---------|----------|
+| **Executive Summary** | Key findings at a glance |
+| **Key Metrics** | RHR, Body Battery, VO2 Max, Sleep, Stress trends |
+| **Patterns** | Sedentary correlations, day-of-week analysis |
+| **Recommendations** | Prioritized, personalized action items |
+| **Monthly Trends** | How your metrics changed over time |
+| **Science** | Research backing the insights |
 
 <details>
 <summary>📄 Click to see sample report sections</summary>
@@ -141,6 +149,7 @@ Stress  36    38    37    40    35    32    30    ← Weekend relief
 |--------|-------------------|----------------|
 | **Resting Heart Rate** | Recovery status | Rising RHR = accumulated fatigue |
 | **Body Battery** | Energy reserves | Low wake values = recovery deficit |
+| **VO2 Max** | Cardiovascular fitness | Higher = better endurance capacity |
 | **Sleep Duration** | Rest quality | <7h = 1.7x injury risk |
 | **Sedentary Time** | Daily inactivity | Strongest sleep predictor |
 | **Stress Level** | Mental load | Throttles overnight recovery |
@@ -154,7 +163,9 @@ Stress  36    38    37    40    35    32    30    ← Weekend relief
 |---------|-------------|
 | `python main.py quickstart` | 🎯 Interactive setup guide |
 | `python main.py fetch --days N` | 📥 Download N days of data |
+| `python main.py fetch --vo2max` | 🫁 Fetch only VO2 max data |
 | `python main.py analyze` | 📊 Generate PDF report |
+| `python main.py analyze --html` | 🌐 Generate HTML report |
 | `python main.py analyze --text` | 📝 Show terminal summary |
 | `python main.py show` | 👀 Display recent data |
 | `python main.py status` | ℹ️ Check data status |
@@ -244,11 +255,12 @@ The insights are based on peer-reviewed research:
 
 Contributions welcome! Ideas for improvement:
 
-- [ ] Add VO2 max trend analysis
+- [x] ~~Add VO2 max trend analysis~~ ✅ Done!
+- [x] ~~HTML report option~~ ✅ Done!
 - [ ] Support for activities/workouts analysis
-- [ ] HTML report option
-- [ ] Interactive dashboard
+- [ ] Interactive dashboard with charts
 - [ ] Training load calculations (CTL/ATL/TSB)
+- [ ] Export to CSV/Excel
 
 ---
 

@@ -13,6 +13,7 @@ from config import config
 from garmin_client import GarminClient
 from data_analyzer import GarminDataAnalyzer
 from pdf_generator import generate_insights_pdf
+from html_generator import generate_insights_html
 
 console = Console()
 
@@ -31,13 +32,15 @@ def cli():
 @click.option("--sleep", "-s", is_flag=True, help="Fetch only sleep data")
 @click.option("--heart-rate", "-h", "heart_rate", is_flag=True, help="Fetch only heart rate data")
 @click.option("--summaries", "-u", is_flag=True, help="Fetch only daily summaries")
-def fetch(days: int, force: bool, activities: bool, sleep: bool, heart_rate: bool, summaries: bool):
+@click.option("--vo2max", "-v", is_flag=True, help="Fetch only VO2 max data")
+def fetch(days: int, force: bool, activities: bool, sleep: bool, heart_rate: bool, summaries: bool, vo2max: bool):
     """Fetch data from Garmin Connect.
 
     Examples:
         python main.py fetch --days 7
         python main.py fetch -d 30 --force
         python main.py fetch --activities --sleep
+        python main.py fetch --vo2max
     """
     config.ensure_directories()
 
@@ -46,7 +49,7 @@ def fetch(days: int, force: bool, activities: bool, sleep: bool, heart_rate: boo
         raise click.Abort()
 
     # If no specific type selected, fetch all
-    fetch_all = not any([activities, sleep, heart_rate, summaries])
+    fetch_all = not any([activities, sleep, heart_rate, summaries, vo2max])
 
     console.print(Panel(f"Fetching data for the last {days} days", title="Garmin Fetch"))
 
@@ -58,6 +61,8 @@ def fetch(days: int, force: bool, activities: bool, sleep: bool, heart_rate: boo
         client.fetch_heart_rate(days, force)
     if fetch_all or summaries:
         client.fetch_daily_summaries(days, force)
+    if fetch_all or vo2max:
+        client.fetch_vo2max(days, force)
 
     console.print("\n[green]Fetch complete![/green]")
 
@@ -190,6 +195,12 @@ def status():
     else:
         console.print("  Daily Summaries: No data")
 
+    if config.vo2max_dir.exists():
+        count = len(list(config.vo2max_dir.glob("*.json")))
+        console.print(f"  VO2 Max: {count} files")
+    else:
+        console.print("  VO2 Max: No data")
+
 
 @cli.command()
 def clear():
@@ -197,7 +208,7 @@ def clear():
     import shutil
 
     if click.confirm("This will delete all cached Garmin data. Continue?"):
-        for data_dir in [config.activities_dir, config.sleep_dir, config.heart_rate_dir, config.daily_summaries_dir]:
+        for data_dir in [config.activities_dir, config.sleep_dir, config.heart_rate_dir, config.daily_summaries_dir, config.vo2max_dir]:
             if data_dir.exists():
                 shutil.rmtree(data_dir)
         config.ensure_directories()
@@ -215,14 +226,16 @@ def logout():
 
 
 @cli.command()
-@click.option("--output", "-o", default=None, help="Output PDF filename")
+@click.option("--output", "-o", default=None, help="Output filename (auto-detects format from extension)")
 @click.option("--pdf/--no-pdf", default=True, help="Generate PDF report (default: yes)")
+@click.option("--html", is_flag=True, help="Generate HTML report instead of PDF")
 @click.option("--text", "-t", is_flag=True, help="Print text summary to console")
-def analyze(output: str, pdf: bool, text: bool):
+def analyze(output: str, pdf: bool, html: bool, text: bool):
     """Analyze your Garmin data and generate insights report.
 
     This command analyzes your fetched Garmin data to identify:
     - Recovery status (resting HR, Body Battery trends)
+    - VO2 max trends and fitness level
     - Sleep patterns and correlations
     - Sedentary time impact on health metrics
     - Stress and recovery relationships
@@ -232,6 +245,7 @@ def analyze(output: str, pdf: bool, text: bool):
     Examples:
         python main.py analyze
         python main.py analyze --output my_report.pdf
+        python main.py analyze --html --output report.html
         python main.py analyze --text --no-pdf
     """
     # Check if data exists
@@ -249,6 +263,7 @@ def analyze(output: str, pdf: bool, text: bool):
         console.print(f"  Loaded {load_result['daily_summaries']} days of daily summaries")
         console.print(f"  Loaded {load_result['sleep']} sleep records")
         console.print(f"  Loaded {load_result['heart_rate']} heart rate records")
+        console.print(f"  Loaded {load_result['vo2max']} VO2 max records")
 
         if load_result['date_range']:
             console.print(f"  Date range: {load_result['date_range'][0]} to {load_result['date_range'][1]}")
@@ -256,13 +271,19 @@ def analyze(output: str, pdf: bool, text: bool):
         # Run analysis
         results = analyzer.analyze_all()
 
-        # Show text summary if requested or no PDF
-        if text or not pdf:
+        # Show text summary if requested or no output
+        if text or (not pdf and not html):
             console.print("\n")
             console.print(analyzer.get_summary_text())
 
-        # Generate PDF
-        if pdf:
+        # Generate HTML report
+        if html:
+            console.print("\n[bold]Generating HTML report...[/bold]")
+            output_path = output or "Health_Insights_Report.html"
+            generate_insights_html(output_path, str(config.data_dir))
+            console.print(f"\n[green]Report saved to: {output_path}[/green]")
+        # Generate PDF report
+        elif pdf:
             console.print("\n[bold]Generating PDF report...[/bold]")
             output_path = output or "Health_Insights_Report.pdf"
             generate_insights_pdf(output_path, str(config.data_dir))
